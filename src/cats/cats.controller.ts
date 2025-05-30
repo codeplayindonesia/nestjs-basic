@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, HttpException, HttpStatus, ForbiddenException, BadRequestException, UseFilters } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpException, HttpStatus, ForbiddenException, BadRequestException, UseFilters, Param, ParseIntPipe, UsePipes } from '@nestjs/common';
 import { CatsService } from './cats.service';
 import { Cat } from './interfaces/cat.interface';
 import { HttpExceptionFilter } from 'src/http-exception.filter';
+import { ValidationPipe } from './pipes/validation.pipe';
+import { ZodValidationPipe } from './pipes/ZodValidationPipe';
+import { CreateCatDto, createCatSchema } from './cats.schema';
 
 @Controller('cats')
 // @UseFilters(HttpExceptionFilter)
@@ -10,38 +13,29 @@ export class CatsController {
 
   @Post()
   // @UseFilters(HttpExceptionFilter)
+  @UsePipes(new ZodValidationPipe(createCatSchema))
   async create(
-    @Body("name") name: string,
-    @Body("age") age: number,
-    @Body("breed") breed: string
+    @Body() body: CreateCatDto
   ) {
-    
-    if (!name) {
-      throw new BadRequestException("Name is required")
-    }
-
-    if (!age) {
-      throw new BadRequestException("Age is required")
-    }
-
-    if (!breed) {
-      throw new BadRequestException("Breed is required")
-    }
-
-    this.catsService.create({ name, age, breed });
+    this.catsService.create(body);
 
     return {
       message: "Create cat successfully",
-      data: { name, age, breed }
+      data: body
     }
   }
 
   @Get()
   async findAll(): Promise<Cat[]> {
-    // throw new HttpException("Forbidden", HttpStatus.FORBIDDEN)
-    
-    throw new ForbiddenException("You are not authorized")
-    
     return this.catsService.findAll();
+  }
+
+  @Get(":id")
+  findOne(@Param("id", ValidationPipe) id: number) {
+    // get from database base on id
+    return {
+      message: "test",
+      id: id
+    }
   }
 }
